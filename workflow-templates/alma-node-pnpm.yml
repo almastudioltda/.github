@@ -1,0 +1,53 @@
+name: ALMA Node.js CI (pnpm)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: [self-hosted, Linux, X64, alma-ci]
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run available validation scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          run_if_present() {
+            local script="$1"
+            if node -e "const p=require('./package.json'); process.exit(p.scripts?.['${script}'] ? 0 : 1)"; then
+              echo "[ALMA CI] Running pnpm script: ${script}"
+              pnpm run "${script}"
+            else
+              echo "[ALMA CI] Skipping missing pnpm script: ${script}"
+            fi
+          }
+
+          run_if_present lint
+          run_if_present typecheck
+          run_if_present test
+          run_if_present build
