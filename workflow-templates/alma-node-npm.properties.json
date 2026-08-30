@@ -1,0 +1,6 @@
+{
+  "name": "ALMA Node.js CI (npm)",
+  "description": "Padrão ALMA para projetos Node.js com npm usando o runner self-hosted da organização.",
+  "iconName": "octicon rocket",
+  "categories": ["JavaScript", "TypeScript"]
+}
