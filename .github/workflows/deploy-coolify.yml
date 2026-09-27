@@ -1,0 +1,75 @@
+name: Deploy to Coolify
+
+on:
+  workflow_call:
+    inputs:
+      resource_uuid:
+        description: Coolify resource UUID to deploy.
+        required: true
+        type: string
+      production_url:
+        description: Public production base URL used for readiness and commit verification.
+        required: true
+        type: string
+      health_path:
+        description: Health endpoint. Set to an empty string to disable.
+        required: false
+        type: string
+        default: /health/ready
+      meta_path:
+        description: Metadata endpoint exposing the deployed commit. Set to an empty string to verify health only.
+        required: false
+        type: string
+        default: /api/v1/meta
+      commit_field:
+        description: Dot path in metadata JSON containing the deployed Git SHA.
+        required: false
+        type: string
+        default: sourceCommit
+      timeout_seconds:
+        description: Maximum wait for production to reach the expected commit.
+        required: false
+        type: number
+        default: 600
+      force:
+        description: Ignore Coolify build cache. Keep false for normal delivery.
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      COOLIFY_DEPLOY_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coolify-${{ inputs.resource_uuid }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy selected resource
+    runs-on: [self-hosted, Linux, X64, alma-ci]
+    timeout-minutes: 15
+    env:
+      COOLIFY_URL: https://coolify.almastudio.ia.br
+      COOLIFY_DEPLOY_TOKEN: ${{ secrets.COOLIFY_DEPLOY_TOKEN }}
+      COOLIFY_RESOURCE_UUID: ${{ inputs.resource_uuid }}
+      PRODUCTION_URL: ${{ inputs.production_url }}
+      EXPECTED_COMMIT: ${{ github.sha }}
+      HEALTH_PATH: ${{ inputs.health_path }}
+      META_PATH: ${{ inputs.meta_path }}
+      COMMIT_FIELD: ${{ inputs.commit_field }}
+      DEPLOY_TIMEOUT_SECONDS: ${{ inputs.timeout_seconds }}
+      FORCE_DEPLOY: ${{ inputs.force }}
+    steps:
+      - name: Checkout ALMA delivery tooling
+        uses: actions/checkout@v4
+        with:
+          repository: almastudioltda/.github
+          ref: main
+          path: .alma-shared
+
+      - name: Deploy only when production differs
+        run: node .alma-shared/scripts/coolify-deploy.mjs
