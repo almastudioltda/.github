@@ -15,14 +15,17 @@ for (const [name, value] of Object.entries({
   COOLIFY_URL,
   COOLIFY_DEPLOY_TOKEN,
   COOLIFY_RESOURCE_UUID,
-  PRODUCTION_URL,
   EXPECTED_COMMIT,
 })) {
   if (!value) throw new Error(`${name} is required`);
 }
 
+if ((HEALTH_PATH || META_PATH) && !PRODUCTION_URL) {
+  throw new Error('PRODUCTION_URL is required when health or metadata verification is enabled');
+}
+
 const coolifyBase = COOLIFY_URL.replace(/\/$/, '');
-const productionBase = PRODUCTION_URL.replace(/\/$/, '');
+const productionBase = PRODUCTION_URL ? PRODUCTION_URL.replace(/\/$/, '') : '';
 const timeoutMs = Number(DEPLOY_TIMEOUT_SECONDS) * 1000;
 const pollMs = 10_000;
 const startedAt = Date.now();
@@ -140,6 +143,11 @@ console.log(
     ? `Coolify queued deployment ${deploymentUuid} for resource ${COOLIFY_RESOURCE_UUID}.`
     : `Coolify accepted deployment for resource ${COOLIFY_RESOURCE_UUID}.`,
 );
+
+if (!HEALTH_PATH && !META_PATH) {
+  console.log('Deployment accepted. Runtime verification is disabled for this non-HTTP resource.');
+  process.exit(0);
+}
 
 while (Date.now() - startedAt < timeoutMs) {
   await new Promise((resolve) => setTimeout(resolve, pollMs));

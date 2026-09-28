@@ -7,17 +7,23 @@ on:
         description: Coolify resource UUID to deploy.
         required: true
         type: string
-      production_url:
-        description: Public production base URL used for readiness and commit verification.
-        required: true
+      expected_commit:
+        description: Git SHA expected in production. Defaults to the caller workflow SHA.
+        required: false
         type: string
+        default: ''
+      production_url:
+        description: Public production base URL used for readiness and commit verification. Optional for non-HTTP resources.
+        required: false
+        type: string
+        default: ''
       health_path:
         description: Health endpoint. Set to an empty string to disable.
         required: false
         type: string
         default: /health/ready
       meta_path:
-        description: Metadata endpoint exposing the deployed commit. Set to an empty string to verify health only.
+        description: Metadata endpoint exposing the deployed commit. Set to an empty string to disable commit verification.
         required: false
         type: string
         default: /api/v1/meta
@@ -57,7 +63,7 @@ jobs:
       COOLIFY_DEPLOY_TOKEN: ${{ secrets.COOLIFY_DEPLOY_TOKEN }}
       COOLIFY_RESOURCE_UUID: ${{ inputs.resource_uuid }}
       PRODUCTION_URL: ${{ inputs.production_url }}
-      EXPECTED_COMMIT: ${{ github.sha }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit != '' && inputs.expected_commit || github.sha }}
       HEALTH_PATH: ${{ inputs.health_path }}
       META_PATH: ${{ inputs.meta_path }}
       COMMIT_FIELD: ${{ inputs.commit_field }}
