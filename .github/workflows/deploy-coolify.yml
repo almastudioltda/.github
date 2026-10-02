@@ -42,6 +42,16 @@ on:
         required: false
         type: boolean
         default: false
+      source_ref:
+        description: Git ref expected to still point at expected_commit before deployment. Empty uses the repository default branch.
+        required: false
+        type: string
+        default: ''
+      verify_source_head:
+        description: Skip stale deployments when the source ref has advanced beyond expected_commit.
+        required: false
+        type: boolean
+        default: true
     secrets:
       COOLIFY_DEPLOY_TOKEN:
         required: true
@@ -69,6 +79,11 @@ jobs:
       COMMIT_FIELD: ${{ inputs.commit_field }}
       DEPLOY_TIMEOUT_SECONDS: ${{ inputs.timeout_seconds }}
       FORCE_DEPLOY: ${{ inputs.force }}
+      SOURCE_REPOSITORY: ${{ github.repository }}
+      SOURCE_REF: ${{ inputs.source_ref }}
+      VERIFY_SOURCE_HEAD: ${{ inputs.verify_source_head }}
+      ALMA_GITHUB_API_URL: ${{ github.api_url }}
+      ALMA_GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout ALMA delivery tooling
         uses: actions/checkout@v4

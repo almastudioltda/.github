@@ -9,6 +9,11 @@ const {
   COMMIT_FIELD = 'sourceCommit',
   DEPLOY_TIMEOUT_SECONDS = '600',
   FORCE_DEPLOY = 'false',
+  SOURCE_REPOSITORY,
+  SOURCE_REF = '',
+  VERIFY_SOURCE_HEAD = 'true',
+  ALMA_GITHUB_API_URL = 'https://api.github.com',
+  ALMA_GITHUB_TOKEN,
 } = process.env;
 
 for (const [name, value] of Object.entries({
@@ -29,6 +34,7 @@ const productionBase = PRODUCTION_URL ? PRODUCTION_URL.replace(/\/$/, '') : '';
 const timeoutMs = Number(DEPLOY_TIMEOUT_SECONDS) * 1000;
 const pollMs = 10_000;
 const startedAt = Date.now();
+const githubBase = ALMA_GITHUB_API_URL.replace(/\/$/, '');
 
 function valueAtPath(value, path) {
   if (!path) return undefined;
@@ -45,6 +51,83 @@ async function responseBody(response) {
   if (!text) return null;
   try { return JSON.parse(text); }
   catch { return text; }
+}
+
+async function githubJson(path) {
+  if (!SOURCE_REPOSITORY || !ALMA_GITHUB_TOKEN) {
+    throw new Error('SOURCE_REPOSITORY and ALMA_GITHUB_TOKEN are required when source-head verification is enabled');
+  }
+  const response = await fetch(`${githubBase}${path}`, {
+    headers: {
+      authorization: `Bearer ${ALMA_GITHUB_TOKEN}`,
+      accept: 'application/vnd.github+json',
+      'user-agent': 'alma-delivery',
+      'x-github-api-version': '2022-11-28',
+    },
+    signal: AbortSignal.timeout(15_000),
+  });
+  const body = await responseBody(response);
+  if (!response.ok) {
+    throw new Error(`GitHub source verification failed (${response.status}): ${typeof body === 'string' ? body : JSON.stringify(body)}`);
+  }
+  return body;
+}
+
+async function assertExpectedCommitIsCurrentSourceHead() {
+  if (VERIFY_SOURCE_HEAD === 'false') return;
+  const repo = await githubJson(`/repos/${SOURCE_REPOSITORY}`);
+  const defaultBranch = repo && typeof repo === 'object' && typeof repo.default_branch === 'string'
+    ? repo.default_branch
+    : undefined;
+  const ref = SOURCE_REF.trim() || defaultBranch;
+  if (!ref) throw new Error('Unable to determine source ref for deploy guard');
+  const commit = await githubJson(`/repos/${SOURCE_REPOSITORY}/commits/${encodeURIComponent(ref)}`);
+  const headSha = commit && typeof commit === 'object' && typeof commit.sha === 'string' ? commit.sha : undefined;
+  if (!headSha) throw new Error(`Unable to resolve current source head for ${SOURCE_REPOSITORY}@${ref}`);
+  if (headSha !== EXPECTED_COMMIT) {
+    console.log(`Stale deploy skipped. expected=${EXPECTED_COMMIT} source=${SOURCE_REPOSITORY}@${ref} current=${headSha}`);
+    process.exit(0);
+  }
+  console.log(`Source head verified. ${SOURCE_REPOSITORY}@${ref}=${headSha}`);
+}
+
+async function coolifyRequest(path, init = {}) {
+  const response = await fetch(`${coolifyBase}${path}`, {
+    ...init,
+    headers: {
+      authorization: `Bearer ${COOLIFY_DEPLOY_TOKEN}`,
+      accept: 'application/json',
+      'user-agent': 'alma-delivery',
+      ...(init.body ? { 'content-type': 'application/json' } : {}),
+      ...(init.headers ?? {}),
+    },
+    signal: AbortSignal.timeout(30_000),
+  });
+  return { response, body: await responseBody(response) };
+}
+
+async function verifyQueuedDeploymentCommit(deploymentUuid) {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const { response, body } = await coolifyRequest(`/api/v1/deployments/${encodeURIComponent(deploymentUuid)}`);
+    if (response.ok && body && typeof body === 'object') {
+      const commit = typeof body.commit === 'string' && body.commit.trim() ? body.commit.trim() : undefined;
+      if (commit) {
+        if (commit !== EXPECTED_COMMIT) {
+          const cancelled = await coolifyRequest(
+            `/api/v1/deployments/${encodeURIComponent(deploymentUuid)}/cancel`,
+            { method: 'POST' },
+          );
+          throw new Error(
+            `Coolify queued unexpected commit ${commit} for deployment ${deploymentUuid}; expected ${EXPECTED_COMMIT}. Cancel status=${cancelled.response.status}`,
+          );
+        }
+        console.log(`Coolify deployment ${deploymentUuid} captured expected commit ${commit}.`);
+        return;
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+  }
+  console.log(`Coolify deployment ${deploymentUuid} did not expose a commit immediately; source-head guard remains active.`);
 }
 
 async function readProductionState() {
@@ -111,22 +194,15 @@ console.log(
   `Deploy required. expected=${EXPECTED_COMMIT} current=${before.commit ?? 'unknown'} health=${before.healthOk ? 'ok' : 'not-ready'}`,
 );
 
-const deployResponse = await fetch(`${coolifyBase}/api/v1/deploy`, {
+await assertExpectedCommitIsCurrentSourceHead();
+
+const { response: deployResponse, body: deployBody } = await coolifyRequest('/api/v1/deploy', {
   method: 'POST',
-  headers: {
-    authorization: `Bearer ${COOLIFY_DEPLOY_TOKEN}`,
-    accept: 'application/json',
-    'content-type': 'application/json',
-    'user-agent': 'alma-delivery',
-  },
   body: JSON.stringify({
     uuid: COOLIFY_RESOURCE_UUID,
     force: FORCE_DEPLOY === 'true',
   }),
-  signal: AbortSignal.timeout(30_000),
 });
-
-const deployBody = await responseBody(deployResponse);
 if (!deployResponse.ok) {
   throw new Error(
     `Coolify rejected deployment (${deployResponse.status}): ${typeof deployBody === 'string' ? deployBody : JSON.stringify(deployBody)}`,
@@ -143,6 +219,8 @@ console.log(
     ? `Coolify queued deployment ${deploymentUuid} for resource ${COOLIFY_RESOURCE_UUID}.`
     : `Coolify accepted deployment for resource ${COOLIFY_RESOURCE_UUID}.`,
 );
+
+if (deploymentUuid) await verifyQueuedDeploymentCommit(deploymentUuid);
 
 if (!HEALTH_PATH && !META_PATH) {
   console.log('Deployment accepted. Runtime verification is disabled for this non-HTTP resource.');
