@@ -1,14 +1,23 @@
 # ALMA Studio · GitHub Organization Configuration
 
-Este repositório concentra padrões compartilhados da organização `almastudioltda`.
+Este repositório mantém **configurações do GitHub, templates e workflows executáveis compartilhados** da organização `almastudioltda`. A autoridade documental de **padrões técnicos transversais aprovados** pertence ao [ALMA Standards](https://github.com/almastudioltda/alma-standards), conforme [ALMA-STD-001](https://github.com/almastudioltda/alma-standards/blob/main/architecture/ECOSYSTEM_SURFACES.md).
+
+O `.github` implementa mecanismos; não substitui o registro de decisões nem os contratos de Core, Comercial, Payments ou dos produtos. Essa distinção é especialmente importante para o fluxo de manutenção dos READMEs.
 
 ## Conteúdo
 
 - `profile/README.md` — apresentação do perfil da organização.
+- `PULL_REQUEST_TEMPLATE.md` — checklist consultivo de impacto documental para PRs sem template próprio, alinhado às normas [ALMA-STD-003](https://github.com/almastudioltda/alma-standards/blob/main/engineering/README_STANDARD.md) e [ALMA-STD-004](https://github.com/almastudioltda/alma-standards/blob/main/engineering/DOCUMENTATION_CHANGE_CONTROL.md).
 - `workflow-templates/alma-node-npm.yml` — CI padrão para projetos Node.js com npm.
 - `workflow-templates/alma-node-pnpm.yml` — CI padrão para projetos Node.js com pnpm.
 - `.github/workflows/deploy-coolify.yml` — entrega reutilizável e seletiva para recursos no Coolify.
 - `scripts/coolify-deploy.mjs` — executor determinístico compartilhado da entrega.
+
+## Atualização dos READMEs
+
+Quando uma PR alterar arquitetura, fronteira de produto, autenticação, APIs, persistência, stack ou deploy, o autor deve **revisar o impacto no README e nos documentos técnicos** e registrar o motivo se nenhuma atualização for necessária. Um README descreve o produto real, não um modelo genérico nem uma implementação futura como concluída.
+
+O template padrão de PR é **advisory** e não cria job bloqueante, regra de merge ou alteração automática. A análise semântica exige evidências e revisão humana. Ver [ALMA-STD-003](https://github.com/almastudioltda/alma-standards/blob/main/engineering/README_STANDARD.md) e [ALMA-STD-004](https://github.com/almastudioltda/alma-standards/blob/main/engineering/DOCUMENTATION_CHANGE_CONTROL.md).
 
 ## Padrão de CI
 

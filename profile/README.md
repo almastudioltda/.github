@@ -22,7 +22,9 @@ A ALMA Studio desenvolve produtos próprios e uma base tecnológica compartilhad
 
 | Componente | Papel |
 | --- | --- |
-| **ALMA Platform** | Workspace unificado e arquitetura canônica do ecossistema |
+| **ALMA Hub** | **Portal do cliente** para conta, contextos e produtos contratados — direção aprovada, implementação em readequação |
+| **ALMA Console** | **Backoffice interno**: suporte e administração da equipe ALMA, com permissões de staff |
+| **ALMA Standards** | Repositório de **padrões técnicos transversais e decisões aprovadas**, não aplicação de negócio |
 | **ALMA Core** | Identidade, organizações, memberships e autorização |
 | **ALMA Comercial** | Catálogo, planos, contratos e direitos comerciais |
 | **ALMA Payments** | Execução e registro de pagamentos, assinaturas e reembolsos |
@@ -45,11 +47,15 @@ alma-*         produto/aplicação
 alma-ia-*      inteligência especializada ou fundação de IA
 alma-infra-*   infraestrutura compartilhada
 alma-lab-*     experimento, POC, fixture ou sandbox
-alma-platform  plataforma e arquitetura canônica
-alma-ideas     descoberta e incubação não canônica
+alma-standards governança e padrões transversais aprovados
+alma-hub       portal de autosserviço do cliente
+alma-console   administração e suporte internos
+alma-ideas     descoberta e incubação não normativa
 ```
 
-Nomes históricos podem permanecer temporariamente quando um rename causar impacto operacional; a migração deve ser feita de forma consciente, atualizando dependências, deploys e documentação.
+**ALMA Platform** é um nome histórico da fase anterior à divisão Hub / Console / Standards. A nomenclatura antiga pode permanecer em código, contratos ou documentação histórica até a migração ser realizada com segurança. Os nomes das famílias `alma-ia-*` e `alma-infra-*` são direções de classificação, **não ordem automática para renomear repositórios operacionais**.
+
+Decisões normativas versionadas: [Registro do ALMA Standards](https://github.com/almastudioltda/alma-standards/blob/main/governance/DECISION_REGISTRY.md).
 
 ## Como pensamos produto
 
