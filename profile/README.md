@@ -19,6 +19,6 @@ Conheça os demais projetos e soluções no **[site da ALMA Studio](https://alma
 
 ## Vamos conversar?
 
-**[Site oficial](https://almastudio.ia.br)** · **[Instagram @alma.studiooficial](https://www.instagram.com/alma.studiooficial/)** · **[WhatsApp](https://wa.me/5547999193425)** · **[Contato](https://almastudio.ia.br/contato)**
+**[Site oficial](https://almastudio.ia.br)** · **[Instagram @almastudio.ia.br](https://www.instagram.com/almastudio.ia.br/)** · **[WhatsApp](https://wa.me/5547999193425)** · **[Contato](https://almastudio.ia.br/contato)**
 
 ALMA Studio · Timbó, Santa Catarina · Brasil.

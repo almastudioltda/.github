@@ -4,4 +4,4 @@
 
 Este repositório reúne os arquivos necessários à presença da ALMA Studio no GitHub. Para conhecer a empresa, nossos produtos e soluções, visite a [apresentação institucional](profile/README.md).
 
-**[Site oficial](https://almastudio.ia.br)** · **[Instagram](https://www.instagram.com/alma.studiooficial/)** · **[Contato](https://almastudio.ia.br/contato)**
+**[Site oficial](https://almastudio.ia.br)** · **[Instagram](https://www.instagram.com/almastudio.ia.br/)** · **[Contato](https://almastudio.ia.br/contato)**
